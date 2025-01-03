@@ -16,7 +16,7 @@ Route::middleware('auth')->group(function () {
     });
     Route::get('/conversations', [App\Http\Controllers\ChatController::class, 'getConversation'])->name('conversations');
     Route::post('/chat', [App\Http\Controllers\ChatController::class, 'handleChat'])->name('handle.chat');
-    Route::get('/chat/stream', [App\Http\Controllers\ChatController::class, 'streamChat'])->name('stream.chat');
+    Route::get('/stream-chat', [App\Http\Controllers\ChatController::class, 'streamChat'])->name('stream.chat');
     Route::get('/profile', [App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [App\Http\Controllers\ProfileController::class, 'destroy'])->name('profile.destroy');

@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Chat app</title>
-    <link rel="stylesheet" href="{{asset('/css/gpt.css')}}">
+    <link rel="stylesheet" href="{{ asset('/css/gpt.css') }}">
     <style>
 
     </style>
@@ -26,7 +26,9 @@
         </div>
 
         <div id="chat-container">
-            <h3 class="text-center mb-4"><span><img src="/imgs/ChatGPT-Logo.svg.png" alt="ChatGPT" style="width: 15px; height: 15px; vertical-align: middle; display: inline-block;">&nbsp;</span>Chat with ChatGPT</h3>
+            <h3 class="text-center mb-4"><span><img src="/imgs/ChatGPT-Logo.svg.png" alt="ChatGPT"
+                        style="width: 15px; height: 15px; vertical-align: middle; display: inline-block;">&nbsp;</span>Chat
+                with ChatGPT</h3>
 
             <div id="messages"></div>
 
@@ -54,6 +56,10 @@
                     return;
                 }
 
+                // Disable the button to prevent multiple clicks
+                $('#send-message').prop('disabled', true);
+
+                // Append the user's message to the chat window
                 const userDiv = $('<div>')
                     .addClass('message user-message')
                     .text(` ${message}`);
@@ -61,31 +67,62 @@
 
                 $userMessageInput.val('');
 
+                // Send the message to the /chat route to save the conversation
                 $.ajax({
                     url: '/chat',
                     method: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify({
-                        message
+                        message: message
                     }),
                     success: function(data) {
+                        // After the message is saved, start the stream for the response
+                        const eventSource = new EventSource(
+                            `/stream-chat?message=${encodeURIComponent(message)}`);
+
                         const botDiv = $('<div>')
                             .addClass('message bot-message')
                             .html(
-                                '<img src="/imgs/ChatGPT-Logo.svg.png" alt="ChatGPT" style="width: 20px; height: 20px; vertical-align: middle; display: inline-block;"> <span style="white-space: pre-line; vertical-align: middle;">' +
-                                data.chatgpt_response + '</span>');
-
-
+                                '<img src="/imgs/ChatGPT-Logo.svg.png" alt="ChatGPT" style="width: 20px; height: 20px; vertical-align: middle; display: inline-block;"> <span class="bot-text" style="white-space: pre-line; vertical-align: middle;"></span>'
+                            );
+                        const botText = botDiv.find('.bot-text');
                         $messagesContainer.append(botDiv);
 
-                        $messagesContainer.scrollTop($messagesContainer[0].scrollHeight);
+                        // Listen for streaming messages
+                        eventSource.onmessage = function(event) {
+                            const data = JSON.parse(event.data);
+
+                            if (data.status === 'start') {
+                                console.log('Stream started');
+                            } else if (data.status === 'complete') {
+                                console.log('Stream completed');
+                                eventSource.close();
+
+                                // Re-enable the send button
+                                $('#send-message').prop('disabled', false);
+                            } else if (data.content) {
+                                // Append each chunk of the message to simulate typing
+                                botText.append(data.content);
+                                $messagesContainer.scrollTop($messagesContainer[0]
+                                    .scrollHeight);
+                            }
+                        };
+
+                        eventSource.onerror = function() {
+                            console.error('Error during streaming');
+                            alert('Something went wrong. Please try again.');
+                            eventSource.close();
+
+                            // Re-enable the button after error
+                            $('#send-message').prop('disabled', false);
+                        };
                     },
                     error: function() {
-                        alert('Something went wrong. Please try again.');
+                        alert('Error saving the conversation. Please try again.');
+                        $('#send-message').prop('disabled', false);
                     }
                 });
             });
-
 
 
             const $conversationContainer = $('#conversationContainer');
@@ -97,24 +134,24 @@
                     method: 'GET',
                     success: function(data) {
                         if (data.conversations && data.conversations.length > 0) {
-                            const newConversations = data.conversations.filter(conv => conv.id > (
-                                lastConversationId || 0));
+                            // Filter for new conversations that have an ID greater than lastConversationId
+                            const newConversations = data.conversations.filter(conv => conv.id >
+                                lastConversationId);
 
                             if (newConversations.length > 0) {
-                                lastConversationId = data.conversations[0].id;
+                                // Update lastConversationId to the most recent conversation's ID
+                                lastConversationId = newConversations[newConversations.length - 1].id;
 
-                                newConversations.reverse().forEach(function(
-                                    conv) {
+                                newConversations.reverse().forEach(function(conv) {
                                     const conversationHtml = `
-                                <div class="conversation-item">
-                                    <p><strong>User:</strong> ${conv.user_message || 'No message'}</p>
-                                    <p><strong>ChatGPT:</strong> ${conv.chatgpt_response || 'No response'}</p>
-                                    <p><strong>Time:</strong> ${conv.created_at ? new Date(conv.created_at).toLocaleString() : 'Unknown'}</p>
-                                </div>
-                                <hr>
-                            `;
-                                    $conversationContainer.prepend(
-                                        conversationHtml);
+                            <div class="conversation-item">
+                                <p><strong>User:</strong> ${conv.user_message || 'No message'}</p>
+                                <p><strong>ChatGPT:</strong> ${conv.chatgpt_response || 'No response'}</p>
+                                <p><strong>Time:</strong> ${conv.created_at ? new Date(conv.created_at).toLocaleString() : 'Unknown'}</p>
+                            </div>
+                            <hr>
+                        `;
+                                    $conversationContainer.prepend(conversationHtml);
                                 });
                             }
                         }
@@ -125,7 +162,9 @@
                 });
             }
 
-            setInterval(fetchNewConversations, 2500);
+            // Fetch new conversations every 2.5 seconds
+            setInterval(fetchNewConversations, 5500);
+
 
 
             $('#toggleSidebar').click(function() {
