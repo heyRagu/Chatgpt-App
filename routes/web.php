@@ -15,6 +15,7 @@ Route::middleware('auth')->group(function () {
         return view('chatui');
     });
     Route::get('/conversations', [App\Http\Controllers\ChatController::class, 'getConversation'])->name('conversations');
+    Route::post('/clear', [App\Http\Controllers\ChatController::class, 'clearConversation'])->name('clear.Conversation');
     Route::post('/chat', [App\Http\Controllers\ChatController::class, 'handleChat'])->name('handle.chat');
     Route::get('/stream-chat', [App\Http\Controllers\ChatController::class, 'streamChat'])->name('stream.chat');
     Route::get('/profile', [App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');

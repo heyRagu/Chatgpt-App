@@ -19,6 +19,9 @@
             <div id="progressBarContainer">
                 <div id="progressBar"></div>
             </div>
+            <div>
+                <button id="clearChatButton" class="btn btn-info">New Chat</button>
+            </div>
             <h3>Conversation History</h3>
             <div id="conversationContainer">
 
@@ -36,6 +39,7 @@
                 <input type="text" id="user-message" placeholder="Message ChatGPT..." autocomplete="off" />
                 <button id="send-message">Send</button>
             </div>
+
         </div>
     </div>
 
@@ -108,7 +112,7 @@
                             }
                         };
 
-                        eventSource.onerror = function() {
+                        eventSource.onerror = function(xhr, status, error) {
                             console.error('Error during streaming');
                             alert('Something went wrong. Please try again.');
                             eventSource.close();
@@ -117,12 +121,19 @@
                             $('#send-message').prop('disabled', false);
                         };
                     },
-                    error: function() {
+                    error: function(xhr, status, error) {
+                        console.error('AJAX Error:', status,
+                            error); // Print status and error details
+                        console.error('XHR Details:', xhr); // XHR (XMLHttpRequest) object
+
                         alert('Error saving the conversation. Please try again.');
+
+                        // Re-enable the send button
                         $('#send-message').prop('disabled', false);
                     }
                 });
             });
+
 
 
             const $conversationContainer = $('#conversationContainer');
@@ -188,6 +199,27 @@
 
                 const scrollPercent = (scrollTop / (scrollHeight - clientHeight)) * 100;
                 $progressBar.css('height', `${scrollPercent}%`);
+            });
+        });
+        $('#clearChatButton').on('click', function() {
+            $.ajax({
+                url: '/clear', // Ensure the correct API URL
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + localStorage.getItem(
+                        'auth_token') // Use stored token or CSRF token
+                },
+                success: function(data) {
+                    alert(data.message); // Display confirmation message
+                    // Optionally, reset the UI here, for example, clear chat history in the frontend
+                    $('#conversationContainer').html(
+                    ''); // Assuming you have a div with id 'chatHistory' for displaying conversation
+                    location.reload();
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error:', error); // Handle errors
+                }
             });
         });
     </script>

@@ -25,8 +25,5 @@ class ChatGPTService
             $onData($chunk->choices[0]->delta->content ?? '');
         }
     }
+
 }
-
-
-
-?>  
